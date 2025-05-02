@@ -3,10 +3,15 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { RiArrowRightLine } from 'react-icons/ri';
+import { useDispatch, useSelector } from 'react-redux';
+import toast from 'react-hot-toast';
+import { setIsLogin } from '../redux/slices/userSlice';
 
 
 const Home = () => {
-            const [projects, setProjects] = useState([])
+            const [projects, setProjects] = useState([]);
+            const user = useSelector(state => state.user.isLogin);
+            const dispatch = useDispatch()
 
             const fetchData = async () => {
                         try {
@@ -19,9 +24,14 @@ const Home = () => {
             }
 
             useEffect(() => {
-
                         fetchData();
-            }, [])
+            }, []);
+
+            const handleLogout = async () => {
+                        const { data } = await axios.get(`${import.meta.env.VITE_BACKEND_URI}/api/auth/logout`, { withCredentials: true })
+                        toast.success(data.message);
+                        dispatch(setIsLogin(false))
+            }
 
             return (
                         <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 p-6 ">
@@ -33,15 +43,37 @@ const Home = () => {
                                                 className="flex justify-between items-center mb-8 "
                                     >
                                                 <h1 className="text-4xl font-bold text-gray-800">My Projects</h1>
-                                                <Link to="/project">
-                                                            <motion.button
-                                                                        whileHover={{ scale: 1.05 }}
-                                                                        whileTap={{ scale: 0.95 }}
-                                                                        className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-sm uppercase tracking-wide hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-50 transition-all duration-300 shadow-lg"
-                                                            >
-                                                                        Create Project
-                                                            </motion.button>
-                                                </Link>
+                                                <div>
+                                                            <Link to="/project">
+                                                                        <motion.button
+                                                                                    whileHover={{ scale: 1.05 }}
+                                                                                    whileTap={{ scale: 0.95 }}
+                                                                                    className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-semibold text-sm uppercase tracking-wide hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-50 transition-all duration-300 shadow-lg"
+                                                                        >
+                                                                                    Create Project
+                                                                        </motion.button>
+                                                            </Link>
+
+                                                            {
+                                                                        user ? (<motion.button
+                                                                                    onClick={handleLogout}
+                                                                                    whileHover={{ scale: 1.05 }}
+                                                                                    whileTap={{ scale: 0.95 }}
+                                                                                    className="px-6 py-3 ml-4 bg-indigo-600  text-white rounded-xl font-semibold text-sm uppercase tracking-wide hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-50 transition-all duration-300 shadow-lg"
+                                                                        >
+                                                                                    logout
+                                                                        </motion.button>) : (<Link to={"/login"}>
+                                                                                    <motion.button
+                                                                                                whileHover={{ scale: 1.05 }}
+                                                                                                whileTap={{ scale: 0.95 }}
+
+                                                                                                className="px-6 py-3 ml-4 bg-indigo-600  text-white rounded-xl font-semibold text-sm uppercase tracking-wide hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400 focus:ring-opacity-50 transition-all duration-300 shadow-lg"
+                                                                                    >
+                                                                                                login
+                                                                                    </motion.button>
+                                                                        </Link>)
+                                                            }
+                                                </div>
                                     </motion.div>
 
                                     {projects.length === 0 ? (

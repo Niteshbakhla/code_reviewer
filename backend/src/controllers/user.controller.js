@@ -21,7 +21,8 @@ export const register = async (req, res, next) => {
                         await user.save();
                         res.status(201).json({ success: true, message: "User registered successfully!" })
             } catch (error) {
-                        next(error);
+                        console.log(error)
+                        next(error.message);
             }
 }
 
@@ -44,13 +45,18 @@ export const login = async (req, res, next) => {
                                     return res.status(401).json({ message: "Invalid email or password" });
                         }
 
-                        const token = jwt.sign({ id: user._id }, config.JWT_SECRET);
+                        const token = jwt.sign({ id: user._id }, config.JWT_SECRET, { expiresIn: "1d" });
+                        res.cookie("token", token)
                         res.status(200).json({ message: "Login successfully!", user: { id: user._id, name: user.name, email: user.email } })
 
             } catch (error) {
 
                         next(error)
             }
+}
+
+export const isLogin = async (req, res) => {
+            return res.status(200).json({ success: true, message: "Login" })
 }
 
 export const logout = (req, res) => {

@@ -10,10 +10,14 @@ const messageSchema = new mongoose.Schema({
             text: {
                         type: String,
                         required: [true, "Message text is required"]
+            },
+            sender: {
+                        type: mongoose.Schema.Types.ObjectId,
+                        ref: "User"
             }
 }, { timestamps: true });
 
 
 
-const Message =  mongoose.model("Message", messageSchema);
+const Message = mongoose.model("Message", messageSchema);
 export default Message;

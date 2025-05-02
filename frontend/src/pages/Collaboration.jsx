@@ -16,11 +16,12 @@ const Collaboration = () => {
                         { id: 1, user: 'Charlie', rating: 4, comment: 'Great work, but needs more comments in code.' },
             ]);
             const [reviewComment, setReviewComment] = useState('');
-            const [isLoading, setIsLoading] = useState(false)
+            const [isLoading, setIsLoading] = useState(false);
             const [reviewRating, setReviewRating] = useState(5);
+            const [userId, setUserId] = useState("");
             const [chatMessages, setChatMessages] = useState([
-                        { id: 1, user: 'Alice', text: 'Hey, how’s the project going?' },
-                        { id: 2, user: 'Bob', text: 'Working on the backend now!' },
+                        // { id: 1, user: 'Alice', text: 'Hey, how’s the project going?' },
+                        // { id: 2, user: 'Bob', text: 'Working on the backend now!' },
             ]);
 
             const navigate = useNavigate();
@@ -29,54 +30,45 @@ const Collaboration = () => {
             const handleChatSubmit = (e) => {
                         e.preventDefault();
                         if (chatInput.trim()) {
-                                    // setChatMessages(prev => [...prev, { id: prev.length + 1, user: null, text: chatInput }])
                                     socket.emit("chat-message", chatInput)
                                     setChatInput('');
                         }
             };
-
-            // Handle review submission
-            const handleReviewSubmit = (e) => {
-                        e.preventDefault();
-                        if (reviewComment.trim()) {
-                                    setReviews([...reviews, { id: reviews.length + 1, user: 'You', rating: reviewRating, comment: reviewComment }]);
-                                    setReviewComment('');
-                                    setReviewRating(5);
-                        }
-            };
-
-
             const handleCodeChange = (value) => {
                         setCodeInput(value);
                         socket.emit("code-change", value)
             }
 
 
-
             useEffect(() => {
                         const socketInstance = io("http://localhost:3000", {
                                     query: {
                                                 project: id
-                                    }
+                                    },
+                                    withCredentials: true
                         });
-                        setSocketIo(socketInstance)
+                        setSocketIo(socketInstance);
 
-                        // socketInstance.emit("chat-history")
-                        // socketInstance.on("chat-history", (message) => {
-                        //             setChatMessages(prevMessage => [...prevMessage, ...message]);
-                        // })
+                        socketInstance.emit("get-id")
+                        socketInstance.on("get-id", (id) => {
+                                    setUserId(id)
+                        });
+
+                        socketInstance.emit("chat-history")
+                        socketInstance.on("chat-history", (message) => {
+                                    console.log(message)
+                                    setChatMessages(prevMessage => [...prevMessage, ...message]);
+                        })
 
                         socketInstance.emit("get-code-change")
                         socketInstance.on("get-code-changes", (data) => {
                                     setCodeInput(data)
                         });
 
-                        socketInstance.on("user-message", (message) => {
-                                    // console.log(message)
-                                    // { id: prevMessage.length + 1, user: message.user, text: message.text }
-                                    setChatMessages(prevMessage => [...prevMessage, { id: prevMessage.length + 1, user: null, text: message }]);
-                        });
 
+                        socketInstance.on("user-message", (message) => {
+                                    setChatMessages(prevMessage => [...prevMessage, { id: prevMessage.length + 1, user: message.user, text: message.text, unique: message.unique }]);
+                        });
 
                         socketInstance.on("code-changes", (data) => {
                                     console.log("code-change", data)
@@ -88,11 +80,9 @@ const Collaboration = () => {
                                     setIsLoading(false)
                         })
                         return () => {
-
                                     socketInstance.disconnect()
                                     socketInstance.off("user-message");
                         }
-
             }, [])
 
 
@@ -139,9 +129,10 @@ const Collaboration = () => {
                                                                         </h2>
                                                                         <div className="flex-1 overflow-y-auto mb-4 p-4 bg-gray-50 rounded-lg">
                                                                                     {chatMessages.map((message) => (
-                                                                                                <div key={message.id} className={`mb-3 ${message.user === 'You' ? 'text-right' : 'text-left'}`}>
-                                                                                                            <p className="text-sm font-medium text-gray-700">{message.user}</p>
-                                                                                                            <p className={`inline-block px-4 py-2 rounded-lg ${message.user === 'You' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}>
+                                                                                                <div key={message.id} className={`mb-3 ${message?.sender._id === userId ? 'text-right ' : 'text-left'}`}>
+                                                                                                            {console.log(message?.unique, socket?.id)}
+                                                                                                            <p className="text-sm font-medium text-gray-700">{message.sender._id === userId ? "You" : message.sender.name}</p>
+                                                                                                            <p className={`inline-block px-4 py-2 rounded-lg ${message.sender._id === userId ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-800'}`}>
                                                                                                                         {message.text}
                                                                                                             </p>
                                                                                                 </div>
@@ -165,7 +156,7 @@ const Collaboration = () => {
                                                                                                 <RiSendPlaneFill className="w-5 h-5" />
                                                                                     </motion.button>
                                                                         </div>
-                                                            </motion.div>
+                                                            </motion.div >
 
                                                             {/* Code Section */}
                                                             <motion.div
@@ -231,7 +222,7 @@ const Collaboration = () => {
                                                                                                 )}
                                                                                     </div>
                                                                         </motion.button>
-                                                            </motion.div>
+                                                            </motion.div >
 
                                                             {/* Review Section */}
                                                             <motion.div
@@ -249,13 +240,13 @@ const Collaboration = () => {
                                                                                                             <div className='w-full h-full overflow-y-scroll'>
                                                                                                                         {<ReactMarkdown>{reviewComment}</ReactMarkdown>}
                                                                                                             </div>
-                                                                                                ): (
+                                                                                                ) : (
                                                                                                             <h1>Your Code review</h1>
                                                                                                 )
                                                                                     }
-                                                                                    
 
-                                                                                    
+
+
                                                                                     {/* <textarea
                                                                                                 value={reviewComment}
                                                                                                 onChange={(e) => setReviewComment(e.target.value)}
@@ -266,10 +257,10 @@ const Collaboration = () => {
                                                                                     /> */}
 
                                                                         </div>
-                                                            </motion.div>
-                                                </div>
-                                    </motion.div>
-                        </div>
+                                                            </motion.div >
+                                                </div >
+                                    </motion.div >
+                        </div >
             )
 };
 
